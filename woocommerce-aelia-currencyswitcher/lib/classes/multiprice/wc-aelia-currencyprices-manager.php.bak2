@@ -170,12 +170,12 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 
 		$product_regular_prices = $this->sanitise_currency_prices(get_value(self::FIELD_REGULAR_CURRENCY_PRICES, $_POST));
 		$product_sale_prices = $this->sanitise_currency_prices(get_value(self::FIELD_SALE_CURRENCY_PRICES, $_POST));
-		$product_wholesale_prices = $this->sanitise_currency_prices(get_value(self::FIELD_WHOLESALE_CURRENCY_PRICES, $_POST)); // added by Carlo
+		$product_sale_prices = $this->sanitise_currency_prices(get_value(self::FIELD_WHOLESALE_CURRENCY_PRICES, $_POST)); // added by Carlo
 
 		// D.Zanella - This code saves the product prices in the different Currencies
 		update_post_meta($post_id, self::FIELD_REGULAR_CURRENCY_PRICES, json_encode($product_regular_prices));
 		update_post_meta($post_id, self::FIELD_SALE_CURRENCY_PRICES, json_encode($product_sale_prices));
-		update_post_meta($post_id, self::FIELD_WHOLESALE_CURRENCY_PRICES, json_encode($product_wholesale_prices)); // added by Carlo
+		update_post_meta($post_id, self::FIELD_WHOLESALE_CURRENCY_PRICES, json_encode($product_sale_prices)); // added by Carlo
 		update_post_meta($post_id, self::FIELD_PRODUCT_BASE_CURRENCY, get_value(self::FIELD_PRODUCT_BASE_CURRENCY, $_POST));
 	}
 
@@ -201,7 +201,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 		foreach($all_variations_ids as $variation_idx => $variation_id) {
 			$variation_regular_currency_prices = $this->sanitise_currency_prices(get_value($variation_idx, $all_variations_regular_currency_prices, null));
 			$variation_sale_currency_prices = $this->sanitise_currency_prices(get_value($variation_idx, $all_variations_sales_currency_prices, null));
-			$variation_wholesale_currency_prices = $this->sanitise_currency_prices(get_value($variation_idx, $all_variations_wholesale_currency_prices, null)); // added by Carlo
 
 			/**
 			 * Variation base currency must match WooCommerce base currency. There is
@@ -216,7 +215,7 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 			// D.Zanella - This code saves the variation prices in the different Currencies
 			update_post_meta($variation_id, self::FIELD_VARIABLE_REGULAR_CURRENCY_PRICES, json_encode($variation_regular_currency_prices));
 			update_post_meta($variation_id, self::FIELD_VARIABLE_SALE_CURRENCY_PRICES, json_encode($variation_sale_currency_prices));
-			update_post_meta($variation_id, self::FIELD_VARIABLE_WHOLESALE_CURRENCY_PRICES, json_encode($variation_wholesale_currency_prices)); // added by Carlo
+			update_post_meta($variation_id, self::FIELD_VARIABLE_WHOLESALE_CURRENCY_PRICES, json_encode($variation_sale_currency_prices)); // added by Carlo
 			update_post_meta($variation_id, self::FIELD_PRODUCT_BASE_CURRENCY, $variation_base_currency);
 		}
 	}
@@ -320,7 +319,7 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 			self::FIELD_REGULAR_CURRENCY_PRICES => '_regular_price',
 			self::FIELD_VARIABLE_REGULAR_CURRENCY_PRICES => '_regular_price',
 			self::FIELD_SALE_CURRENCY_PRICES => '_sale_price',
-			self::FIELD_WHOLESALE_CURRENCY_PRICES => '_wholesale_price', // added by Carlo
+			self::FIELD_WHOLESALE_CURRENCY_PRICES => '_sale_price', // added by Carlo
 			self::FIELD_VARIABLE_SALE_CURRENCY_PRICES => '_sale_price',
 			self::FIELD_VARIABLE_WHOLESALE_CURRENCY_PRICES => '_wholesale_price', // added by Carlo
 		);
@@ -363,7 +362,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 		return $prices;
 	}
 
-	// added by Carlo
 	/**
 	 * Returns an array of Currency => Price values containing the Sale Currency
 	 * Prices a Product.
@@ -374,12 +372,8 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 	public function get_product_wholesale_prices($post_id) {
 		$prices = $this->get_product_currency_prices($post_id,
 																								 self::FIELD_WHOLESALE_CURRENCY_PRICES);
-
-		$prices['USD'] = get_post_meta( $post_id, '_ignite_level_54df6a649e89f_price', true );
-
 		return $prices;
 	}
-	// end added by Carlo
 
 	/**
 	 * Returns an array of Currency => Price values containing the Regular
@@ -473,7 +467,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 		// WooCommerce 2.1
 		add_filter('woocommerce_get_variation_regular_price', array($this, 'woocommerce_get_variation_regular_price'), 20, 4);
 		add_filter('woocommerce_get_variation_sale_price', array($this, 'woocommerce_get_variation_sale_price'), 20, 4);
-		add_filter('woocommerce_get_variation_wholesale_price', array($this, 'woocommerce_get_variation_wholesale_price'), 20, 4); // added by Carlo
 		add_filter('woocommerce_get_variation_price', array($this, 'woocommerce_get_variation_price'), 20, 4);
 
 		// Bulk pricing for variable products
@@ -544,12 +537,9 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 	 * product prices (one for each currency).
 	 * @return WC_Product
 	 */
-
-	//  array $product_wholesale_prices_in_currency, -- added by Carlo
 	protected function convert_to_currency(WC_Product $product, $currency,
 																				 array $product_regular_prices_in_currency,
-																				 array $product_wholesale_prices_in_currency,
-																				 array $product_sale_prices_in_currency ) {
+																				 array $product_sale_prices_in_currency) {
 		$shop_base_currency = $this->base_currency();
 		$product_base_currency = $this->get_product_base_currency($product->id);
 
@@ -569,17 +559,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 			$product_base_sale_price = get_value($shop_base_currency, $product_sale_prices_in_currency);
 		}
 
-		// added by Carlo
-
-		// Take sale price in the specific product base currency
-		$product_base_wholesale_price = get_value($product_base_currency, $product_wholesale_prices_in_currency);
-		// If a sale price was not entered for the selected product base currency,
-		// take the one in shop base currency
-		if(!is_numeric($product_base_wholesale_price)) {
-			$product_base_wholesale_price = get_value($shop_base_currency, $product_wholesale_prices_in_currency);
-		}
-		// end added by Carlo
-
 		$product->regular_price = get_value($currency, $product_regular_prices_in_currency);
 		if(($currency != $product_base_currency) && !is_numeric($product->regular_price)) {
 			$product->regular_price = $this->convert_from_base($product_base_regular_price, $currency, $product_base_currency);
@@ -589,15 +568,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 		if(($currency != $product_base_currency) && !is_numeric($product->sale_price)) {
 			$product->sale_price = $this->convert_from_base($product_base_sale_price, $currency, $product_base_currency);
 		}
-
-		// added by Carlo
-
-		$product->wholesale_price = get_value($currency, $product_wholesale_prices_in_currency);
-		if(($currency != $product_base_currency) && !is_numeric($product->wholesale_price)) {
-			$product->wholesale_price = $this->convert_from_base($product_base_wholesale_price, $currency, $product_base_currency);
-		}
-
-		// end added by Carlo
 
 		// Debug
 		//var_dump(
@@ -609,58 +579,13 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 		//	$product->sale_price
 		//);
 
-		// added by Carlo
-		if ( is_user_logged_in() ) {
-
-			global $wp_roles;
-
-			if (!isset($wp_roles)) {
-                $wp_roles = new WP_Roles();
-            }
-
-            $is_wholesale = false;
-			$user = wp_get_current_user();
-
-			if ( !empty( $user->roles ) && is_array( $user->roles ) ) {
-				foreach ( $user->roles as $role )
-				{
-					$role_name = isset( $wp_roles->role_names[$role] ) ? $wp_roles->role_names[$role] : '';
-					if( strtolower($role_name) == 'wholesale' )
-					{
-						$is_wholesale = true;
-					}
-				}
-			}
+		if(!is_numeric($product->regular_price) ||
+			 $this->product_is_on_sale($product)) {
+			$product->price = $product->sale_price;
 		}
-
-
-
-		@session_start();
-		if( isset($_SESSION['am_wholesale']) && $_SESSION['am_wholesale'] == 1)
-		{
-			$is_wholesale = true;
+		else {
+			$product->price = $product->regular_price;
 		}
-
-		if( $is_wholesale)
-		{
-			//$product->price = $currency == 'USD' ? get_post_meta( $product->id, '_ignite_level_54df6a649e89f_price', true ) : $product->price = $product->wholesale_price;
-			$product->price = $product->wholesale_price;
-		}
-		// end added by Carlo
-		else
-		{
-			if(!is_numeric($product->regular_price) ||
-				 $this->product_is_on_sale($product)) {
-				$product->price = $product->sale_price;
-			}
-			else {
-				$product->price = $product->regular_price;
-			}
-		}
-
-		// fix for missing product options when using Association plugin
-		$product->price = $product->price == '' || empty($product->price) ? 0 : $product->price;
-
 		return $product;
 	}
 
@@ -730,7 +655,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 
 		$variation_regular_prices = array();
 		$variation_sale_prices = array();
-		$variation_wholesale_prices = array(); // added by Carlo
 		$variation_prices = array();
 
 		foreach($product->children as $variation_id) {
@@ -741,7 +665,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 
 			$variation_regular_prices[$variation_id] = $variation->regular_price;
 			$variation_sale_prices[$variation_id] = $variation->sale_price;
-			$variation_wholesale_prices[$variation_id] = $variation->sale_price; // added by Carlo
 			$variation_prices[$variation_id] = $variation->price;
 		}
 
@@ -750,13 +673,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 
 		$product->min_variation_sale_price = $this->get_min_value($variation_sale_prices);
 		$product->max_variation_sale_price = $this->get_max_value($variation_sale_prices);
-
-		// added by Carlo
-
-		$product->min_variation_wholesale_price = $this->get_min_value($variation_wholesale_prices);
-		$product->max_variation_wholesale_price = $this->get_max_value($variation_wholesale_prices);
-
-		// end added by Carlo
 
 
 		$product->min_variation_price = $this->get_min_value($variation_prices);
@@ -769,13 +685,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 
 		$product->min_sale_price_variation_id = array_search($product->min_variation_sale_price, $variation_sale_prices);
 		$product->max_sale_price_variation_id = array_search($product->max_variation_sale_price, $variation_sale_prices);
-
-		// added by Carlo
-
-		$product->min_wholesale_price_variation_id = array_search($product->min_variation_wholesale_price, $variation_wholesale_prices);
-		$product->max_wholesale_price_variation_id = array_search($product->max_variation_wholesale_price, $variation_wholesale_prices);
-
-		// end added by Carlo
 
 		$product->min_price_variation_id = array_search($product->min_variation_price, $variation_prices);
 		$product->max_price_variation_id = array_search($product->max_variation_price, $variation_prices);
@@ -798,7 +707,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 		$product = $this->convert_to_currency($product,
 																					$currency,
 																					$this->get_variation_regular_prices($product->variation_id),
-																					$this->get_variation_wholesale_prices($product->variation_id), // added by Carlo
 																					$this->get_variation_sale_prices($product->variation_id));
 		$product->id = $original_product_id;
 
@@ -847,7 +755,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 		$product = $this->convert_to_currency($product,
 																					$currency,
 																					$this->get_product_regular_prices($product->id),
-																					$this->get_product_wholesale_prices($product->id), // added by Carlo
 																					$this->get_product_sale_prices($product->id));
 
 		return $product;
@@ -895,7 +802,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 			$product = $this->convert_to_currency($product,
 																				$currency,
 																				$this->get_product_regular_prices($product->id),
-																				$this->get_product_wholesale_prices($product->id), // added by Carlo
 																				$this->get_product_sale_prices($product->id));
 		}
 		else {
@@ -1033,40 +939,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 		return $sale_price;
 	}
 
-	// added by Carlo
-	/**
-	 * Get the minimum or maximum variation sale price.
-	 *
-	 * @param string price The product price passed by WooCommerce.
-	 * @param WC_Product product The product for which the price is being retrieved.
-	 * @param string min_or_max The type of price to retrieve. It can be 'min' or 'max'.
-	 * @param boolean display Whether the value is going to be displayed
-	 * @return float
-	 */
-	public function woocommerce_get_variation_wholesale_price($price, $product, $min_or_max, $display) {
-		// If we are in the backend, no conversion takes place, therefore we can return
-		// the original value, in base currency
-		if(is_admin()) {
-			return $price;
-		}
-
-		if(!$this->is_min_max_price_type_valid($min_or_max)) {
-			trigger_error(sprintf(__('Invalid variation sale price type specified: "%s".'),
-														$min_or_max),
-										E_USER_WARNING);
-			return $price;
-		}
-
-		// Retrieve the price in the selected currency
-		$sale_price = get_value($min_or_max . '_variation_wholesale_price', $product);
-		// Process the price, recalculating it depending if it already includes tax or not
-		$sale_price = $this->process_variation_price_tax($wholesale_price, $product, $min_or_max, $display);
-
-		return $wholesale_price;
-	}
-
-	// end added by Carlo
-
 	/**
 	 * Get the minimum or maximum variation price.
 	 *
@@ -1128,14 +1000,6 @@ class WC_Aelia_CurrencyPrices_Manager implements IWC_Aelia_CurrencyPrices_Manage
 			printf(__('Sale prices (%s)', $text_domain),
 						 $currency);
 			echo '</option>';
-
-			// added by Carlo
-			// Display entry for variation's wholesale prices
-			echo "<option value=\"variable_wholesale_currency_prices_{$currency}\"  currency=\"{$currency}\">";
-			printf(__('Wholesale prices (%s)', $text_domain),
-						 $currency);
-			echo '</option>';
-			// end added by Carlo
 		}
 		echo '</optgroup>';
 	}

@@ -38,7 +38,6 @@ class WC_Aelia_CS_Bundles_Integration {
 		add_action('woocommerce_process_product_meta_bundle', array($this->currencyprices_manager, 'process_product_meta'));
 		add_filter('woocommerce_bundle_price_html', array($this, 'woocommerce_bundle_price_html'), 10, 2);
 		add_filter('woocommerce_bundle_sale_price_html', array($this, 'woocommerce_bundle_sale_price_html'), 10, 2);
-		add_filter('woocommerce_bundle_wholesale_price_html', array($this, 'woocommerce_bundle_wholesale_price_html'), 10, 2); // added by Carlo
 	}
 
 	/**
@@ -102,33 +101,6 @@ class WC_Aelia_CS_Bundles_Integration {
 		$bundle_sale_price_html = $product->get_price_html_from_text();
 		return '<del>' . $min_bundle_regular_price_in_currency . '</del> <ins>' . $min_bundle_sale_price_in_currency . '</ins>';
 	}
-
-	// added by Carlo
-	/**
-	 * Converts the price for a bundled Products on sale. With sales, the regular
-	 * price is passed "as-is" and it doesn't get converted into currency.
-	 *
-	 * @param string bundle_sale_price_html The HTML snippet containing a
-	 * Product's regular price and sale price.
-	 * @param WC_Product product The product being displayed.
-	 * @return string The HTML snippet with the sale price converted into
-	 * currently selected currency.
-	 */
-	public function woocommerce_bundle_wholesale_price_html($bundle_wholesale_price_html, $product) {
-		$product = $this->convert_product_prices($product);
-
-		$min_bundle_regular_price_in_currency = $this->currency_switcher()->format_price($product->min_bundle_regular_price);
-		$min_bundle_wholesale_price_in_currency = $product->min_bundle_price;
-		if($min_bundle_wholesale_price_in_currency <= 0) {
-			$min_bundle_wholesale_price_in_currency = __('Free!', 'woocommerce');
-		} else{
-			$min_bundle_wholesale_price_in_currency = $this->currency_switcher()->format_price($min_bundle_wholesale_price_in_currency);
-		}
-
-		$bundle_wholesale_price_html = $product->get_price_html_from_text();
-		return '<del>' . $min_bundle_regular_price_in_currency . '</del> <ins>' . $min_bundle_wholesale_price_in_currency . '</ins>';
-	}
-	// end added by Carlo
 
 	/**
 	 * Callback to perform the conversion of bundle prices into selected currencu.

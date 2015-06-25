@@ -59,3 +59,5 @@ foreach($enabled_currencies as $currency) {
 														);
 }
 echo '</div>'; // .sale_prices
+echo '</div>'; // .prices_wrapper
+echo '</div>';
