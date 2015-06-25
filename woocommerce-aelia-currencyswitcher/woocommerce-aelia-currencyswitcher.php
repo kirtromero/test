@@ -210,8 +210,6 @@ class WC_Aelia_CurrencySwitcher implements IWC_Aelia_CurrencySwitcher {
 
 		$currency_symbol = get_woocommerce_currency_symbol($currency);
 
-		exit;
-
 		return '<span class="amount">' . sprintf(get_woocommerce_price_format(), $currency_symbol, $price) . '</span>';
 	}
 
@@ -626,44 +624,6 @@ class WC_Aelia_CurrencySwitcher implements IWC_Aelia_CurrencySwitcher {
 		return '<del>' . $regular_price_in_currency . '</del> <ins>' . $sale_price_in_currency . '</ins>' . $this->get_price_suffix($product);
 	}
 
-	// added by Carlo
-
-	/**
-	 * Converts the price for a simple Products on sale. With sales, the regular
-	 * price is passed "as-is" and it doesn't get converted into currency.
-	 *
-	 * @param string sale_price_html The HTML snippet containing a Product's regular
-	 * price and sale price.
-	 * @param WC_Product product The product being displayed.
-	 * @return string The HTML snippet with the sale price converted into
-	 * currently selected Currency.
-	 */
-	public function woocommerce_wholesale_price_html($wholesale_price_html, $product) {
-		$product = $this->convert_product_prices($product);
-
-		// WC2.1 displays prices differently, depending if they already include tax
-		// and if they should be displayed with or without tax
-		if(version_compare($this->wc()->version, '2.1', '>=')) {
-			$regular_price_in_currency = $this->_currencyprices_manager->process_product_price_tax($product, $product->regular_price);
-			$wholesale_price_in_currency = $this->_currencyprices_manager->process_product_price_tax($product, $product->get_price());
-		}
-		else {
-			$regular_price_in_currency = $product->regular_price;
-			$wholesale_price_in_currency = $product->get_price();
-		}
-
-		$regular_price_in_currency = $this->format_price($regular_price_in_currency);
-		if($wholesale_price_in_currency <= 0) {
-			$wholesale_price_in_currency = __('Free!', 'woocommerce');
-		} else{
-			$wholesale_price_in_currency = $this->format_price($wholesale_price_in_currency);
-		}
-
-		return '<del>' . $regular_price_in_currency . '</del> <ins>' . $wholesale_price_in_currency . '</ins>' . $this->get_price_suffix($product);
-	}
-
-	// end added by Carlo
-
 	/**
 	 * Converts the price for a variable Products on sale. With sales, the regular
 	 * price is passed "as-is" and it doesn't get converted into currency.
@@ -707,54 +667,6 @@ class WC_Aelia_CurrencySwitcher implements IWC_Aelia_CurrencySwitcher {
 
 		return '<del>' . $min_regular_price_in_currency . '</del> <ins>' . $min_sale_price_in_currency . '</ins>' . $this->get_price_suffix($product);
 	}
-
-
-	// added by Carlo
-	/**
-	 * Converts the price for a variable Products on sale. With sales, the regular
-	 * price is passed "as-is" and it doesn't get converted into currency.
-	 *
-	 * @param string sale_price_html The HTML snippet containing a Product's regular
-	 * price and sale price.
-	 * @param WC_Product product The product being displayed.
-	 * @return string The HTML snippet with the sale price converted into
-	 * currently selected Currency.
-	 */
-	public function woocommerce_variable_wholesale_price_html($wholesale_price_html, $product) {
-		return $wholesale_price_html;
-		$product = $this->convert_product_prices($product);
-
-		// WC2.1 displays prices differently, depending if they already include tax
-		// and if they should be displayed with or without tax
-		if(version_compare($this->wc()->version, '2.1', '>=')) {
-			$min_regular_price_in_currency = $this->_currencyprices_manager
-				->process_variation_price_tax($product->min_variation_regular_price,
-																			$product,
-																			'min',
-																			true);
-			$min_wholesale_price_in_currency = $this->_currencyprices_manager
-				->process_variation_price_tax($product->min_variation_wholesale_price,
-																			$product,
-																			'min',
-																			true);
-		}
-		else {
-			$min_regular_price_in_currency = $product->min_variation_regular_price;
-			$min_wholesale_price_in_currency = $product->get_price();
-		}
-
-		$min_regular_price_in_currency = $this->format_price($min_regular_price_in_currency);
-
-		if($min_wholesale_price_in_currency <= 0) {
-			$min_wholesale_price_in_currency = __('Free!', 'woocommerce');
-		} else{
-			$min_wholesale_price_in_currency = $this->format_price($min_wholesale_price_in_currency);
-		}
-
-		return '<del>' . $min_regular_price_in_currency . '</del> <ins>' . $min_wholesale_price_in_currency . '</ins>' . $this->get_price_suffix($product);
-	}
-
-	// end added by Carlo
 
 	/**
 	 * Formats the order totals in the "my account" page using the Currency Switcher
@@ -849,42 +761,6 @@ class WC_Aelia_CurrencySwitcher implements IWC_Aelia_CurrencySwitcher {
 
 		return '<del>' . $regular_price_in_currency . '</del> <ins>' . $sale_price_in_currency . '</ins>' . $this->get_price_suffix($product);
 	}
-
-	// added by Carlo
-
-	/**
-	 * Converts the price for a Product Variation on sale.
-	 *
-	 * @param string sale_price_html The HTML snippet containing a Product's regular
-	 * price and sale price.
-	 * @param WC_Product product The product being displayed.
-	 * @return string The HTML snippet with the prices converted into currently
-	 * selected Currency.
-	 */
-	public function woocommerce_variation_wholesale_price_html($wholesale_price_html, $product) {
-		//var_dump($product, $product->regular_price, $product->sale_price);
-
-		// With WC2.1, when we reach this point prices have already been converted
-		// and formatted to be displayed with/without tax. We can, therefore, return
-		// the price html as is.
-		if(version_compare($this->wc()->version, '2.1', '>=')) {
-			return $wholesale_price_html;
-		}
-
-		// WooCommerce 2.0.x and earlier
-		$product = $this->convert_product_prices($product);
-		$regular_price_in_currency = $this->format_price($product->regular_price);
-		$wholesale_price_in_currency = $product->wholesale_price;
-		if($wholesale_price_in_currency <= 0) {
-			$wholesale_price_in_currency = __('Free!', 'woocommerce');
-		} else{
-			$wholesale_price_in_currency = $this->format_price($wholesale_price_in_currency);
-		}
-
-		return '<del>' . $regular_price_in_currency . '</del> <ins>' . $wholesale_price_in_currency . '</ins>' . $this->get_price_suffix($product);
-	}
-
-	// end added by Carlo
 
 	/**
 	 * Adds more scheduling options to WordPress Cron.
@@ -1350,15 +1226,12 @@ class WC_Aelia_CurrencySwitcher implements IWC_Aelia_CurrencySwitcher {
 			add_filter('pre_option_woocommerce_currency_pos', array($this, 'pre_option_woocommerce_currency_pos'), 10, 1);
 
 			add_filter('woocommerce_sale_price_html', array($this, 'woocommerce_sale_price_html'), 5, 2);
-			add_filter('woocommerce_wholesale_price_html', array($this, 'woocommerce_wholesale_price_html'), 5, 2); // added by Carlo
 			add_filter('woocommerce_free_sale_price_html', array($this, 'woocommerce_sale_price_html'), 5, 2);
 
 			// Display variation prices taking into account manually entered ones
 			add_filter('woocommerce_variation_price_html', array($this, 'woocommerce_variation_price_html'), 5, 2);
 			add_filter('woocommerce_variation_sale_price_html', array($this, 'woocommerce_variation_sale_price_html'), 5, 2);
 			add_filter('woocommerce_variable_sale_price_html', array($this, 'woocommerce_variable_sale_price_html'), 5, 2);
-			add_filter('woocommerce_variation_wholesale_price_html', array($this, 'woocommerce_variation_wholesale_price_html'), 5, 2); // added by Carlo
-			add_filter('woocommerce_variable_wholesale_price_html', array($this, 'woocommerce_variable_wholesale_price_html'), 5, 2); // added by Carlo
 			add_filter('woocommerce_variable_free_sale_price_html', array($this, 'woocommerce_variable_sale_price_html'), 5, 2);
 		}
 
